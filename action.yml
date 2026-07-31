@@ -1,0 +1,46 @@
+name: Setup Doover
+description: Install the Doover CLI and the toolchain its app commands need.
+branding:
+  icon: package
+  color: blue
+
+inputs:
+  python-version:
+    required: false
+    default: "3.11"
+  node-version:
+    description: >
+      Installed unconditionally. Deciding per app whether a widget exists would
+      mean branching before discovery has run, for a step that costs seconds.
+    required: false
+    default: "20"
+  cli-version:
+    description: >
+      Pin the CLI, e.g. "doover-cli==1.4.0". Defaults to latest. Worth pinning in
+      the workflow rather than per repo, so a bad release is one bump to undo.
+    required: false
+    default: doover-cli
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        cache-dependency-glob: "**/uv.lock"
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install the Doover CLI
+      shell: bash
+      run: uv tool install '${{ inputs.cli-version }}'
+
+    - name: Report versions
+      shell: bash
+      run: doover --version || true
