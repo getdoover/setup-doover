@@ -45,7 +45,11 @@ runs:
 
     - name: Install the Doover CLI
       shell: bash
-      run: uv tool install '${{ inputs.cli-version }}'
+      # Via `env` rather than interpolated into the command, so the value cannot
+      # break out of the quoting and run something else.
+      env:
+        CLI_VERSION: ${{ inputs.cli-version }}
+      run: uv tool install "$CLI_VERSION"
 
     # `doover app lint` and `doover app format` shell out to `uv run ruff`, which
     # falls back to PATH when the project itself does not depend on ruff — and most
@@ -54,7 +58,17 @@ runs:
     # dev dependency for it.
     - name: Install ruff
       shell: bash
-      run: uv tool install 'ruff${{ inputs.ruff-version && format("=={0}", inputs.ruff-version) || "" }}'
+      # Branch in bash rather than in an Actions expression: expressions only take
+      # single-quoted strings, and passing the input through `env` keeps it out of
+      # the command line, where a crafted value would otherwise be shell-injected.
+      env:
+        RUFF_VERSION: ${{ inputs.ruff-version }}
+      run: |
+        if [ -n "$RUFF_VERSION" ]; then
+          uv tool install "ruff==$RUFF_VERSION"
+        else
+          uv tool install ruff
+        fi
 
     - name: Report versions
       shell: bash
