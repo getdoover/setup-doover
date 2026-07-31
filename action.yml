@@ -20,6 +20,12 @@ inputs:
       the workflow rather than per repo, so a bad release is one bump to undo.
     required: false
     default: doover-cli
+  ruff-version:
+    description: >
+      Pin ruff, e.g. "0.16.0". Defaults to latest. Worth pinning once the fleet's
+      lint is clean, so a new ruff release cannot change what passes.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -40,6 +46,15 @@ runs:
     - name: Install the Doover CLI
       shell: bash
       run: uv tool install '${{ inputs.cli-version }}'
+
+    # `doover app lint` and `doover app format` shell out to `uv run ruff`, which
+    # falls back to PATH when the project itself does not depend on ruff — and most
+    # app repos don't, since they lint via pre-commit. Installing it as a tool here
+    # means the lint commands work in any repo without every repo having to add a
+    # dev dependency for it.
+    - name: Install ruff
+      shell: bash
+      run: uv tool install 'ruff${{ inputs.ruff-version && format("=={0}", inputs.ruff-version) || "" }}'
 
     - name: Report versions
       shell: bash
